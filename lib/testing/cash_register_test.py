@@ -60,6 +60,13 @@ class TestCashRegister(unittest.TestCase):
         register.apply_discount()
         self.assertEqual(register.total, 40.00)  # 20% off $50 = $40
     
+    def test_apply_discount_success_message(self):
+        """Test that apply_discount returns the expected success message"""
+        register = CashRegister(20)
+        register.add_item("Shirt", 50.00, 1)
+        message = register.apply_discount()
+        self.assertEqual(message, "After the discount, the total comes to $40.")
+    
     def test_apply_discount_with_no_discount(self):
         """Test that apply_discount prints message when no discount"""
         self.register.add_item("Hat", 25.00, 1)

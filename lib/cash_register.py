@@ -83,7 +83,13 @@ class CashRegister:
             self.total -= discount_amount
             # Round to 2 decimal places
             self.total = round(self.total, 2)
-            message = f"Discount of {self.discount}% applied. New total: ${self.total}"
+
+            if self.total.is_integer():
+                total_str = str(int(self.total))
+            else:
+                total_str = f"{self.total:.2f}"
+
+            message = f"After the discount, the total comes to ${total_str}."
             print(message)
             return message
 
