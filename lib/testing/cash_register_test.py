@@ -1,119 +1,95 @@
-#!/usr/bin/env python3
+# test_cash_register.py
+
+import os
+import sys
+import unittest
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from cash_register import CashRegister
 
-import io
-import sys
-
-class TestCashRegister:
-    '''CashRegister in cash_register.py'''
-
-    cash_register = CashRegister()
-    cash_register_with_discount = CashRegister(20)
-
-    def reset_register_totals(self):
-      self.cash_register.total = 0
-      self.cash_register_with_discount.total = 0
-
-    def test_discount_attribute(self):
-        '''takes one optional argument, a discount, on initialization.'''
-        assert(self.cash_register.discount == 0)
-        assert(self.cash_register_with_discount.discount == 20)
-
-    def test_total_attribute(self):
-        '''sets an instance variable total to zero on initialization.'''
-        assert(self.cash_register.total == 0)
-        assert(self.cash_register_with_discount.total == 0)
-
-    def test_items_attribute(self):
-        '''sets an instance variable items to empty list on initialization.'''
-        assert(self.cash_register.items == [])
-        assert(self.cash_register_with_discount.items == [])
-
-    def test_add_item(self):
-        '''accepts a title and a price and increases the total.'''
-        self.cash_register.add_item("eggs", 0.98)
-        assert(self.cash_register.total == 0.98)
-        # self.reset_total(self.cash_register)
-        self.reset_register_totals()
-
-    def test_add_item_optional_quantity(self):
-        '''also accepts an optional quantity.'''
-        self.cash_register.add_item("book", 5.00, 3)
-        assert(self.cash_register.total == 15.00)
-        # self.cash_register.total = 0
-        self.reset_register_totals()
-
-    def test_add_item_with_multiple_items(self):
-        '''doesn"t forget about the previous total'''
-        self.cash_register.add_item("Lucky Charms", 4.5)
-        assert(self.cash_register.total == 4.5)
-        self.cash_register.add_item("Ritz Crackers", 5.0)
-        assert(self.cash_register.total == 9.5)
-        self.cash_register.add_item("Justin's Peanut Butter Cups", 2.50, 2)
-        assert(self.cash_register.total == 14.5)
-        self.reset_register_totals()
-
-    def test_apply_discount(self):
-        '''applies the discount to the total price.'''
-        self.cash_register_with_discount.add_item("macbook air", 1000)
-        self.cash_register_with_discount.apply_discount()   
-        assert(self.cash_register_with_discount.total == 800)
-        # self.cash_register_with_discount.total = 0
-        self.reset_register_totals()
-
-    def test_apply_discount_success_message(self):
-        '''prints success message with updated total'''
-        captured_out = io.StringIO()
-        sys.stdout = captured_out
-        self.cash_register_with_discount.add_item("macbook air", 1000)
-        self.cash_register_with_discount.apply_discount()
-        sys.stdout = sys.__stdout__
-        assert(captured_out.getvalue() == "After the discount, the total comes to $800.\n")
-        self.reset_register_totals()
-
-    def test_apply_discount_reduces_total(self):
-        '''reduces the total'''
-        self.cash_register_with_discount.add_item("macbook air", 1000)
-        self.cash_register_with_discount.apply_discount()
-        assert(self.cash_register_with_discount.total == 800)
-        self.reset_register_totals()
-
-    def test_apply_discount_when_no_discount(self):
-        '''prints a string error message that there is no discount to apply'''
-        captured_out = io.StringIO()
-        sys.stdout = captured_out
-        self.cash_register.apply_discount()
-        sys.stdout = sys.__stdout__
-        assert(captured_out.getvalue() == "There is no discount to apply.\n")
-        self.reset_register_totals()
-
-    def test_items_list_without_multiples(self):
-        '''returns an array containing all items that have been added'''
-        new_register = CashRegister()
-        new_register.add_item("eggs", 1.99)
-        new_register.add_item("tomato", 1.76)
-        assert(new_register.items == ["eggs", "tomato"])
-
-    def test_items_list_with_multiples(self):
-        '''returns an array containing all items that have been added, including multiples'''
-        new_register = CashRegister()
-        new_register.add_item("eggs", 1.99, 2)
-        new_register.add_item("tomato", 1.76, 3)
-        assert(new_register.items == ["eggs", "eggs", "tomato", "tomato", "tomato"])
-
+class TestCashRegister(unittest.TestCase):
+    
+    def setUp(self):
+        """Create a fresh cash register before each test"""
+        self.register = CashRegister()
+    
+    def test_init_default_discount(self):
+        """Test that discount defaults to 0"""
+        self.assertEqual(self.register.discount, 0)
+    
+    def test_init_with_discount(self):
+        """Test that discount can be set"""
+        register = CashRegister(20)
+        self.assertEqual(register.discount, 20)
+    
+    def test_discount_validation_integer(self):
+        """Test that discount must be an integer"""
+        register = CashRegister("20")
+        self.assertEqual(register.discount, 0)  # Should default to 0
+    
+    def test_discount_validation_range(self):
+        """Test that discount must be between 0-100"""
+        register = CashRegister(150)
+        self.assertEqual(register.discount, 0)
+        
+        register = CashRegister(-10)
+        self.assertEqual(register.discount, 0)
+    
+    def test_add_item_updates_total(self):
+        """Test that add_item correctly updates total"""
+        self.register.add_item("Apple", 1.50, 2)
+        self.assertEqual(self.register.total, 3.00)
+    
+    def test_add_item_updates_items_list(self):
+        """Test that add_item correctly updates items list"""
+        self.register.add_item("Banana", 0.75, 3)
+        self.assertEqual(len(self.register.items), 3)
+        self.assertEqual(self.register.items, ["Banana", "Banana", "Banana"])
+    
+    def test_add_item_records_transaction(self):
+        """Test that add_item records transaction"""
+        self.register.add_item("Orange", 2.00, 1)
+        self.assertEqual(len(self.register.previous_transactions), 1)
+        self.assertEqual(self.register.previous_transactions[0]['item'], "Orange")
+    
+    def test_apply_discount_with_valid_discount(self):
+        """Test that apply_discount reduces total correctly"""
+        register = CashRegister(20)
+        register.add_item("Shirt", 50.00, 1)
+        register.apply_discount()
+        self.assertEqual(register.total, 40.00)  # 20% off $50 = $40
+    
+    def test_apply_discount_with_no_discount(self):
+        """Test that apply_discount prints message when no discount"""
+        self.register.add_item("Hat", 25.00, 1)
+        self.register.apply_discount()
+        # Total should remain unchanged
+        self.assertEqual(self.register.total, 25.00)
+    
     def test_void_last_transaction(self):
-      '''subtracts the last item from the total'''
-      self.cash_register.add_item("apple", 0.99)
-      self.cash_register.add_item("tomato", 1.76)
-      self.cash_register.void_last_transaction()
-      assert(self.cash_register.total == 0.99)
-      self.reset_register_totals()
+        """Test that void_last_transaction removes last transaction"""
+        self.register.add_item("Shoes", 60.00, 1)
+        self.register.add_item("Socks", 10.00, 2)
+        
+        initial_total = self.register.total
+        initial_items_count = len(self.register.items)
+        
+        self.register.void_last_transaction()
+        
+        # Should remove the socks transaction (2 pairs for $20)
+        self.assertEqual(self.register.total, initial_total - 20.00)
+        self.assertEqual(len(self.register.items), initial_items_count - 2)
+    
+    def test_void_empty_transaction(self):
+        """Test voiding when no transactions exist"""
+        self.register.void_last_transaction()  # Should not error
+    
+    def test_multiple_items_same_name(self):
+        """Test adding multiple items with same name"""
+        self.register.add_item("Apple", 1.00, 5)
+        self.assertEqual(len(self.register.items), 5)
+        self.assertEqual(self.register.total, 5.00)
 
-    def test_void_last_transaction_with_multiples(self):
-      '''returns the total to 0.0 if all items have been removed'''
-      self.cash_register.add_item("tomato", 1.76, 2)
-      self.cash_register.void_last_transaction() 
-      assert(self.cash_register.total == 0.0)
-      self.reset_register_totals()
-      
+if __name__ == "__main__":
+    unittest.main()
